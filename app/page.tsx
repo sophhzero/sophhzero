@@ -83,8 +83,8 @@ const contacts: {
   },
   {
     label: "Twitter",
-    value: "@0x000zero",
-    href: "https://x.com/0x000zero",
+    value: "@sophhzero",
+    href: "https://x.com/sophhzero",
     icon: "twitter",
   },
   {
@@ -237,7 +237,7 @@ export default function Home() {
                   <h1 className="glitch-title text-5xl font-semibold text-white sm:text-7xl">
                     <span className="glitch-title-primary">zero</span>
                     <span className="glitch-title-alias" aria-hidden="true">
-                      0x000zero
+                      sophhzero
                     </span>
                   </h1>
                   <span className="cursor-block mb-2 hidden h-14 w-4 bg-[var(--accent)] shadow-[0_0_24px_rgba(255,255,255,0.35)] sm:block" />
