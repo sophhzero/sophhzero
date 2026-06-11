@@ -1,8 +1,12 @@
 "use client";
 
 import {
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  type TransitionEvent as ReactTransitionEvent,
   useEffect,
+  useRef,
+  useState,
 } from "react";
 
 type ProjectCardData = {
@@ -14,6 +18,38 @@ type ProjectCardData = {
   stack: string[];
   href?: string;
 };
+
+type BountyCardData = {
+  id: string;
+  companyName: string;
+  companyUrl: string;
+  severity: string;
+  vulnerabilityType: string;
+};
+
+const bountyCards: BountyCardData[] = [
+  {
+    id: "01",
+    companyName: "Superhuman",
+    companyUrl: "https://superhuman.com/",
+    severity: "Critical",
+    vulnerabilityType: "Unauthenticated Non-Blind SSRF",
+  },
+  {
+    id: "02",
+    companyName: "Aurory",
+    companyUrl: "https://aurory.io/",
+    severity: "Informative",
+    vulnerabilityType: "Mass Assignment",
+  },
+  {
+    id: "03",
+    companyName: "Playtika",
+    companyUrl: "https://www.playtika.com/",
+    severity: "Informative",
+    vulnerabilityType: "Mass Assignment",
+  },
+];
 
 const projectCards: ProjectCardData[] = [
   {
@@ -108,6 +144,31 @@ const contacts: {
 ];
 
 export default function Home() {
+  const bountyViewportRef = useRef<HTMLDivElement>(null);
+  const [bountyVisibleCount, setBountyVisibleCount] = useState(3);
+  const [bountyCardStep, setBountyCardStep] = useState(0);
+  const [bountyPeek, setBountyPeek] = useState(0);
+  const [bountyIsAnimating, setBountyIsAnimating] = useState(false);
+  const hasBountyCarousel = bountyCards.length > bountyVisibleCount;
+  const [bountyTrackIndex, setBountyTrackIndex] = useState(bountyCards.length);
+  const renderedBountyCards = hasBountyCarousel
+    ? [...bountyCards, ...bountyCards, ...bountyCards]
+    : bountyCards;
+  const bountyGap = bountyVisibleCount === 1 ? 16 : 24;
+  const bountyCardWidth = bountyCardStep > 0
+    ? bountyCardStep - bountyGap
+    : null;
+  const bountyTrackStyle = {
+    "--bounty-gap": `${bountyGap}px`,
+    "--bounty-peek": `${hasBountyCarousel ? bountyPeek : 0}px`,
+    "--bounty-track-offset": hasBountyCarousel && bountyCardStep > 0
+      ? `${bountyPeek - (bountyCardStep * bountyTrackIndex)}px`
+      : "0px",
+    ...(hasBountyCarousel && bountyCardWidth
+      ? { "--bounty-card-width": `${bountyCardWidth}px` }
+      : {}),
+  } as CSSProperties;
+
   useEffect(() => {
     const root = document.documentElement;
     const trailDots = Array.from(document.querySelectorAll<HTMLElement>(".cursor-trail-dot"));
@@ -170,6 +231,37 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    const viewport = bountyViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const updateCarouselMetrics = () => {
+      const windowWidth = viewport.getBoundingClientRect().width;
+      const nextVisibleCount = windowWidth < 640 ? 1 : 3;
+      const gap = nextVisibleCount === 1 ? 16 : 24;
+      const peek = bountyCards.length > nextVisibleCount
+        ? Math.min(nextVisibleCount === 1 ? 54 : 140, windowWidth * 0.14)
+        : 0;
+      const cardWidth = (windowWidth - (gap * (nextVisibleCount - 1))) / nextVisibleCount;
+      const step = Math.max(0, cardWidth + gap);
+
+      setBountyVisibleCount(nextVisibleCount);
+      setBountyCardStep(step);
+      setBountyPeek(peek);
+    };
+
+    updateCarouselMetrics();
+
+    const resizeObserver = new ResizeObserver(updateCarouselMetrics);
+    resizeObserver.observe(viewport);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   const handleCardMove = (event: ReactPointerEvent<HTMLElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - bounds.left;
@@ -186,6 +278,42 @@ export default function Home() {
   const resetCard = (event: ReactPointerEvent<HTMLElement>) => {
     event.currentTarget.style.setProperty("--tilt-x", "0deg");
     event.currentTarget.style.setProperty("--tilt-y", "0deg");
+  };
+
+  const showPreviousBounties = () => {
+    if (!hasBountyCarousel || bountyCardStep === 0) {
+      return;
+    }
+
+    setBountyIsAnimating(true);
+    setBountyTrackIndex((current) => current - 1);
+  };
+
+  const showNextBounties = () => {
+    if (!hasBountyCarousel || bountyCardStep === 0) {
+      return;
+    }
+
+    setBountyIsAnimating(true);
+    setBountyTrackIndex((current) => current + 1);
+  };
+
+  const handleBountyTransitionEnd = (event: ReactTransitionEvent<HTMLDivElement>) => {
+    if (
+      event.target !== event.currentTarget ||
+      event.propertyName !== "transform"
+    ) {
+      return;
+    }
+
+    setBountyIsAnimating(false);
+    setBountyTrackIndex((current) => {
+      if (current >= bountyCards.length * 2 || current < bountyCards.length) {
+        return (((current % bountyCards.length) + bountyCards.length) % bountyCards.length) + bountyCards.length;
+      }
+
+      return current;
+    });
   };
 
   return (
@@ -211,7 +339,7 @@ export default function Home() {
           </a>
 
           <nav className="hidden gap-6 font-mono text-sm text-white/55 md:flex">
-            {["about", "projects", "writeups", "contact"].map((item) => (
+            {["about", "bounties", "projects", "writeups", "contact"].map((item) => (
               <a className="nav-link" href={`#${item}`} key={item}>
                 ./{item}
               </a>
@@ -284,9 +412,69 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="section-shell reveal" id="projects">
+        <section className="section-shell reveal" id="bounties">
           <SectionHeading
             index="02"
+            title="bounties"
+            command="ls ./bounties"
+          />
+
+          <div className="bounty-carousel">
+            {hasBountyCarousel ? (
+              <button
+                aria-label="Previous bounties"
+                className="bounty-carousel-button bounty-carousel-button-previous"
+                onClick={showPreviousBounties}
+                type="button"
+              >
+                <span aria-hidden="true">‹</span>
+              </button>
+            ) : null}
+
+            <div className="bounty-carousel-window" ref={bountyViewportRef}>
+              <div
+                className={`bounty-carousel-viewport${hasBountyCarousel ? " is-carousel" : ""}`}
+                style={bountyTrackStyle}
+              >
+                <div
+                  className={`bounty-carousel-track${bountyIsAnimating ? " is-animating" : ""}`}
+                  onTransitionEnd={handleBountyTransitionEnd}
+                >
+                  {renderedBountyCards.map((bounty, index) => (
+                    <BountyCard
+                      bounty={bounty}
+                      className={
+                        hasBountyCarousel && index === bountyTrackIndex - 1
+                          ? "bounty-card-edge-left"
+                          : hasBountyCarousel && index === bountyTrackIndex + bountyVisibleCount
+                            ? "bounty-card-edge-right"
+                            : undefined
+                      }
+                      key={`bounty-carousel-card-${index}-${bounty.id}-${bounty.companyName}`}
+                      onPointerLeave={resetCard}
+                      onPointerMove={handleCardMove}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {hasBountyCarousel ? (
+              <button
+                aria-label="Next bounties"
+                className="bounty-carousel-button bounty-carousel-button-next"
+                onClick={showNextBounties}
+                type="button"
+              >
+                <span aria-hidden="true">›</span>
+              </button>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="section-shell reveal" id="projects">
+          <SectionHeading
+            index="03"
             title="projects"
             command="ls ./projects"
           />
@@ -305,7 +493,7 @@ export default function Home() {
 
         <section className="section-shell reveal" id="writeups">
           <SectionHeading
-            index="03"
+            index="04"
             title="writeups"
             command="ls ./writeups ./github"
           />
@@ -334,7 +522,7 @@ export default function Home() {
 
         <section className="section-shell reveal border-b-0 pb-8" id="contact">
           <SectionHeading
-            index="04"
+            index="05"
             title="contact"
             command="ssh zero@portfolio"
           />
@@ -473,6 +661,81 @@ function ProjectCard({
     >
       {content}
     </article>
+  );
+}
+
+function BountyCard({
+  bounty,
+  className,
+  onPointerLeave,
+  onPointerMove,
+}: {
+  bounty: BountyCardData;
+  className?: string;
+  onPointerLeave: (event: ReactPointerEvent<HTMLElement>) => void;
+  onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
+}) {
+  const faviconUrl = `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(
+    bounty.companyUrl,
+  )}&sz=64`;
+
+  return (
+    <a
+      className={`project-card project-card-link interactive-panel${className ? ` ${className}` : ""}`}
+      href={bounty.companyUrl}
+      onPointerLeave={onPointerLeave}
+      onPointerMove={onPointerMove}
+      rel="noreferrer"
+      target="_blank"
+    >
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
+          <span className="bounty-company-icon">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              alt=""
+              height="32"
+              src={faviconUrl}
+              width="32"
+            />
+          </span>
+          <div className="min-w-0">
+            <p className="font-mono text-xs text-[var(--accent)]">
+              {bounty.id}
+            </p>
+            <h3 className="mt-3 whitespace-nowrap text-xl font-medium text-white sm:text-2xl">
+              {bounty.companyName}
+            </h3>
+          </div>
+        </div>
+
+        <span className="rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/8 px-3 py-1 font-mono text-xs text-[var(--accent)]">
+          {bounty.severity}
+        </span>
+      </div>
+
+      <div className="grid gap-4">
+        <BountyDetail label="Company URL" value={bounty.companyUrl} />
+        <BountyDetail label="Vulnerability" value={bounty.vulnerabilityType} />
+      </div>
+
+      <div className="mt-auto pt-6">
+        <span className="project-open-indicator">open ↗</span>
+      </div>
+    </a>
+  );
+}
+
+function BountyDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-white/30">
+        {label}
+      </p>
+      <p className="mt-2 overflow-wrap-anywhere text-sm leading-6 text-white/72">
+        {value}
+      </p>
+    </div>
   );
 }
 

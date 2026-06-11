@@ -337,6 +337,157 @@ a {
   transform: translateX(2px);
 }
 
+.bounty-carousel {
+  position: relative;
+  display: block;
+}
+
+.bounty-carousel-window {
+  position: relative;
+  min-width: 0;
+  overflow: visible;
+}
+
+.bounty-carousel-viewport {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+  padding: 0.3rem 0;
+}
+
+.bounty-carousel-viewport.is-carousel {
+  width: calc(100% + (var(--bounty-peek, 0px) * 2));
+  min-height: 20.1rem;
+  margin-right: calc(var(--bounty-peek, 0px) * -1);
+  margin-left: calc(var(--bounty-peek, 0px) * -1);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, 0.7) calc(var(--bounty-peek, 0px) * 0.38),
+    black var(--bounty-peek, 0px),
+    black calc(100% - var(--bounty-peek, 0px)),
+    rgba(0, 0, 0, 0.7) calc(100% - (var(--bounty-peek, 0px) * 0.38)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, 0.7) calc(var(--bounty-peek, 0px) * 0.38),
+    black var(--bounty-peek, 0px),
+    black calc(100% - var(--bounty-peek, 0px)),
+    rgba(0, 0, 0, 0.7) calc(100% - (var(--bounty-peek, 0px) * 0.38)),
+    transparent
+  );
+}
+
+.bounty-carousel-track {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  gap: var(--bounty-gap, 1.5rem);
+  transform: translate3d(var(--bounty-track-offset, 0), 0, 0);
+  will-change: transform;
+}
+
+.bounty-carousel-track.is-animating {
+  transition: transform 0.54s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bounty-carousel-track > .project-card {
+  flex: 0 0 var(--bounty-card-width, calc((100% - 3rem) / 3));
+  height: 19.5rem;
+  min-width: 0;
+  animation: none;
+}
+
+.bounty-card-edge-left,
+.bounty-card-edge-right {
+  opacity: 0.5;
+  pointer-events: none;
+  filter: saturate(0.78);
+  transform:
+    perspective(900px)
+    rotateX(var(--tilt-x, 0deg))
+    rotateY(var(--tilt-y, 0deg))
+    scale(0.965);
+}
+
+.bounty-card-edge-left {
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 34%, black 100%);
+  mask-image: linear-gradient(90deg, transparent, black 34%, black 100%);
+}
+
+.bounty-card-edge-right {
+  -webkit-mask-image: linear-gradient(270deg, transparent, black 34%, black 100%);
+  mask-image: linear-gradient(270deg, transparent, black 34%, black 100%);
+}
+
+.bounty-carousel-button {
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(244, 247, 251, 0.72);
+  cursor: pointer;
+  font-size: 1.85rem;
+  line-height: 1;
+  transform: translateY(-50%);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.bounty-carousel-button-previous {
+  left: -3.7rem;
+}
+
+.bounty-carousel-button-next {
+  right: -3.7rem;
+}
+
+.bounty-carousel-button:hover {
+  transform: translateY(calc(-50% - 1px));
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg);
+}
+
+.bounty-carousel-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 4px;
+}
+
+.bounty-company-icon {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.bounty-company-icon img {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.45rem;
+}
+
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
 .contact-card {
   position: relative;
   display: flex;
@@ -536,6 +687,23 @@ a {
 @media (max-width: 768px) {
   .section-shell {
     padding: 5rem 0;
+  }
+
+  .bounty-carousel {
+    gap: 0.75rem;
+  }
+  .bounty-carousel-button {
+    width: 2.35rem;
+    height: 2.35rem;
+    font-size: 1.5rem;
+  }
+
+  .bounty-carousel-button-previous {
+    left: -0.25rem;
+  }
+
+  .bounty-carousel-button-next {
+    right: -0.25rem;
   }
 
   .terminal-panel,
